@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+env/
+.venv/
+
+# CAD & Temporary outputs
+*.bak
+*.dwl
+*.dwl2
+*.log
+*.tmp
+~$*.xlsx
+
+# OS
+.DS_Store
+Thumbs.db

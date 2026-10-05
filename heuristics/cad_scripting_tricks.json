@@ -1,0 +1,62 @@
+{
+  "ezdxf": {
+    "block_inserts_coordinates": {
+      "problem": "الكيانات (Entities) داخل الـ Blocks في الأوتوكاد تكون إحداثياتها محلية بالنسبة لنقطة إدراج البلوك وليس بالنسبة للمسقط العام (WCS).",
+      "solution": "يجب تحويل إحداثيات عناصر البلوك بضربها في مصفوفة التحويل (Transformation Matrix) الخاصة بالـ Insert Entity للحصول على الإحداثيات الحقيقية في المسقط.",
+      "code_snippet": "for entity in block_ref.virtual_entities(): # resolves transformation automatically in ezdxf",
+      "updated_at": "2026-09-23T20:03:00"
+    },
+    "windows_encoding_trick": {
+      "problem": "طباعة النصوص العربية على كونسول بايثون في بيئة Windows يسبب أحياناً خطأ 'charmap' codec can't encode characters بسبب ترميز cp1252.",
+      "solution": "إعادة ضبط ترميز المخرجات في أول السكربت عبر sys.stdout.reconfigure(encoding='utf-8') لضمان طباعة النصوص العربية والإنجليزية بسلاسة تامة.",
+      "code_snippet": "import sys\nsys.stdout.reconfigure(encoding='utf-8')",
+      "updated_at": "2026-09-23T20:03:00"
+    }
+  },
+  "geometry": {
+    "polyline_closed_check": {
+      "problem": "بعض خطوط الحوائط أو الغرف في أوتوكاد المعماري تبدو مغلقة بصرياً لكنها مفتوحة برمجياً (IsClosed = False بفارق كسور الملليمتر).",
+      "solution": "تطبيق تسامح هندسي (Geometric Tolerance Epsilon = 1e-3) لدمج النقاط المتقاربة جداً لإغلاق المضلعات وحساب المساحات بدقة.",
+      "code_snippet": "def points_close(p1, p2, tol=0.01): return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)**0.5 < tol",
+      "updated_at": "2026-09-23T20:03:00"
+    }
+  },
+  "autocad_headless": {
+    "pdf_vector_window_plot": {
+      "problem": "تصدير صور المخططات الكبيرة عبر بايثون و matplotlib يستهلك ذاكرة ضخمة ويفقد جودة الخطوط والفرش وتبدو الصور مشوشة وغير واضحة.",
+      "solution": "استخدام AutoCAD Core Console (accoreconsole.exe) مع أمر LISP (command \"-plot\" ...) لطباعة نافذة محددة (Window Plot) مباشرة إلى PDF كـ Vector عالي الدقة في 6 ثوانٍ، ثم تحويله أو قصه عبر PyMuPDF بدقة 300 DPI.",
+      "code_snippet": "(command \"-plot\" \"yes\" \"Model\" \"DWG To PDF.pc3\" \"ISO full bleed A1 (841.00 x 594.00 MM)\" \"Millimeters\" \"Landscape\" \"No\" \"Window\" pt1 pt2 \"Fit\" \"Center\" \"Yes\" \"monochrome.ctb\" \"Yes\" \"As displayed\" pdf_path \"No\" \"Yes\")",
+      "updated_at": "2026-09-24T00:23:00"
+    },
+    "block_base_point_offset": {
+      "problem": "عند استخراج البلوكات من مخططات كاد سابقة عبر WBLOCK، غالباً ما تكون الكيانات مرسومة بإحداثيات بعيدة جداً عن نقطة الصفر الأصلية (INSBASE=(0,0,0))، مما يؤدي لظهور خطوط شاردة وإزاحات ضخمة عند إدراجها في المخطط الجديد.",
+      "solution": "حساب مركز الصندوق المحيط بالبلوك (cx, cy) برمجياً، وتحريك جميع الكيانات بالبلوك بمقدار (-cx, -cy) ليصبح مركز البلوك الهندسي مطابقاً تماماً لنقطة الصفر (0,0,0).",
+      "code_snippet": "(setq ss (ssget \"X\")) (command \"_.MOVE\" ss \"\" (list cx cy 0.0) '(0.0 0.0 0.0)) (setvar \"INSBASE\" '(0.0 0.0 0.0))",
+      "updated_at": "2026-09-26T20:30:00"
+    },
+    "block_scale_unit_normalization": {
+      "problem": "بعض البلوكات المستخرجة من مخططات الكاد الأصلية تكون مرسومة بوحدات ميكانيكية أو مليمترات (مثل مراوح الشفط AXI-F-IL1 أو الثريات) ومدرجة في المخطط الأصلي بسكيل صغير جداً مثل 0.000215، وإدراجها بسكيل 1.0 يجعلها تظهر بحجم مئات الأمتار على كامل اللوحة.",
+      "solution": "فحص سكيل إدراج البلوك في المخطط المصدري الأصلي عبر (assoc 41 ed)، ومعايرة مقاس البلوك داخلياً في مكتبة البلوكات بوحدة المتر الحقيقية (Real-World Meters) ليتم إدراجه بسكيل 1.0 متوافقاً مع المخطط المعماري.",
+      "code_snippet": "(command \"_.SCALE\" ss \"\" '(0.0 0.0 0.0) orig_scale)",
+      "updated_at": "2026-09-26T20:30:00"
+    },
+    "com_object_model_vs_command_line": {
+      "problem": "استخدام موجه أوامر أوتوكاد التفاعلي عبر AutoLISP (command ...) أو السكربتات النصية (.scr) يسبب أخطاء عدم تزامن (Desynchronization) كارثية؛ إذا اختلف عدد الأسئلة الفرعية (Prompts) لأمر مثل PLINE أو TEXT يبتلع أوتوكاد الإحداثيات اللاحقة كنصوص أو زوايا، مما يولد خطوطاً شاردة وحروفاً عملاقة وتشوهات.",
+      "solution": "الاعتماد الحصري على نموذج الكائنات المباشر (ActiveX COM Object Model) سواء عبر Python win32com أو دوال vla-* المباشرة؛ حيث يتم استدعاء الدوال مثل ModelSpace.InsertBlock و ModelSpace.AddLightWeightPolyline بمعاملات صريحة ومباشرة بدون أي وسيط موجه أوامر وبدون أي احتمالية للتداخل.",
+      "code_snippet": "acad = win32com.client.Dispatch('AutoCAD.Application')\nmsp = acad.ActiveDocument.ModelSpace\nblk = msp.InsertBlock(Point, 'Wall_Light.dwg', 1.0, 1.0, 1.0, 0.0)\npline = msp.AddLightWeightPolyline(CoordsArray)",
+      "updated_at": "2026-09-26T23:48:00"
+    },
+    "discipline_block_isolation": {
+      "problem": "استخراج بلوكات ميكانيكية أو تكييف (مثل AXI-F-IL1) واستخدامها كرموز كهربائية يؤدي لظهور نصوص وتوصيفات ضخمة داخل البلوك (مثل أسهم اتجاه الهواء أو أرقام الموديل بحجم آلاف النقاط) مما يشوه المخطط بالكامل.",
+      "solution": "الالتزام الصارم باستخراج الرموز الكهربائية فقط من مخطط الكهرباء المعتمد (مثل Fan_Outlet لمخارج الشفاط)، وفحص محتويات أي بلوك والتأكد من خلوه من أي نصوص شاردة قبل إدراجه.",
+      "code_snippet": "insert_block('Fan_Outlet', x, y, 'lighting', 0.0) # Correct electrical symbol",
+      "updated_at": "2026-09-26T23:48:00"
+    },
+    "autocad_com_progid_version": {
+      "problem": "عند وجود أكثر من إصدار أوتوكاد مثبت على الجهاز، فإن استدعاء win32com.client.Dispatch('AutoCAD.Application') قد يستدعي تلقائياً إصداراً قديماً (مثل 2013 / ProgID 19) مما يفشل في قراءة ملفات DWG الحديثة ويعطي خطأ not a valid drawing file.",
+      "solution": "تحديد رقم الإصدار الدقيق للـ ProgID صراحة (مثل AutoCAD.Application.26 لإصدار AutoCAD 2027) لضمان ربط COM بالإصدار الحديث الصحيح.",
+      "code_snippet": "acad = win32com.client.Dispatch('AutoCAD.Application.26')",
+      "updated_at": "2026-09-27T00:36:00"
+    }
+  }
+}
