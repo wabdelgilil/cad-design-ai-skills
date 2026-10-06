@@ -81,6 +81,18 @@
       "solution": "ترتيب مسارات الفحص تنازلياً من أحدث إصدار (AutoCAD 2027 فأقل)، والتحقق من وجود accoreconsole في الإصدار الأحدث أولاً لتفادي مشاكل عدم توافق صيغ DWG الحديثة.",
       "code_snippet": "DEFAULT_PATHS = [Path(r'C:\\Program Files\\Autodesk\\AutoCAD 2027\\accoreconsole.exe'), ...]",
       "updated_at": "2026-10-06T22:33:00"
+    },
+    "dynamic_block_effectivename_resolution": {
+      "problem": "عند تعديل بارامترات البلوك الديناميكي في أوتوكاد، ينشئ البرنامج نسخة مجهولة تبدأ بـ *U (مثل *U38 أو *U81)، مما يؤدي لضياع اسم الرمز الأصلي. محاولة استخدام ActiveX عبر (vlax-ename->vla-object ent) تفشل تماماً داخل accoreconsole بخطأ 'bad argument type: VLA-OBJECT nil' لعدم تهيئة سيرفر COM في الوضع الرأسي (Headless).",
+      "solution": "استخراج الاسم الحقيقي للبلوك الديناميكي عبر DXF النقي مباشرة دون COM: من خلال فحص xdata لتسجيل البلوك في جدول الكتل (BLOCK_RECORD) والوصول لتطبيق 'AcDbBlockRepBTag'؛ حيث يحتوي كود 1005 على مقبض (Handle) البلوك الأصلي، ومنه نصل إلى الاسم الأصلي (group 2) بسرعة وموثوقية 100%.",
+      "code_snippet": "(defun get-effective-name (ent / blk-name blk-rec ed-br xdata app-data parent-h parent-ent true-name)\n  (setq blk-name (cdr (assoc 2 (entget ent))))\n  (if (and blk-name (wcmatch blk-name \"`*U*\"))\n    (progn\n      (setq blk-rec (tblobjname \"BLOCK\" blk-name))\n      (if blk-rec\n        (progn\n          (setq ed-br (entget (cdr (assoc 330 (entget blk-rec))) '(\"AcDbBlockRepBTag\")))\n          (setq xdata (assoc -3 ed-br))\n          (if xdata\n            (progn\n              (setq app-data (cdr (assoc \"AcDbBlockRepBTag\" (cdr xdata))))\n              (setq parent-h (cdr (assoc 1005 app-data)))\n              (if parent-h\n                (progn\n                  (setq parent-ent (handent parent-h))\n                  (if parent-ent (setq true-name (cdr (assoc 2 (entget parent-ent)))))\n                )\n              )\n            )\n          )\n        )\n      )\n      (if true-name true-name blk-name)\n    )\n    blk-name\n  )\n)",
+      "updated_at": "2026-10-06T23:33:00"
+    },
+    "self_healing_execution_feedback": {
+      "problem": "حدوث أخطاء غير متوقعة في المخططات مثل فقدان خطوط shx أو تلف جداول الكتل يوقف معالجة accoreconsole أو يؤدي لمخرجات فارغة دون تشخيص واضح.",
+      "solution": "تضمين آلية فحص الأخطاء الذاتي التلقائي (Self-Healing Loop) في بايثون؛ بحيث يراقب السكربت حجم مخرجات الاستخراج ويلتقط رسائل stderr/stdout ويطبق تصحيحات فورية (مثل استبدال الخطوط المفقودة أو تجاوز الكيانات التالفة) ويعيد المحاولة آلياً.",
+      "code_snippet": "if not out_file.exists() or out_file.stat().st_size == 0:\n    apply_cad_recovery_flags(cmd)\n    proc = retry_execution()",
+      "updated_at": "2026-10-06T23:22:00"
     }
   }
 }
