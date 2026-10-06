@@ -57,6 +57,30 @@
       "solution": "تحديد رقم الإصدار الدقيق للـ ProgID صراحة (مثل AutoCAD.Application.26 لإصدار AutoCAD 2027) لضمان ربط COM بالإصدار الحديث الصحيح.",
       "code_snippet": "acad = win32com.client.Dispatch('AutoCAD.Application.26')",
       "updated_at": "2026-09-27T00:36:00"
+    },
+    "headless_dialog_suppression": {
+      "problem": "عند تشغيل accoreconsole أو السكربتات التلقائية، إذا واجه أوتوكاد ملفاً يحتاج استبدال خطوط shx أو تحذيراً حول إصدار الملف يظهر مربع حوار يوقف العملية تماماً في الخلفية (Silent Hang).",
+      "solution": "إلزام السكربت أو ملف LISP بضبط متغيرات FILEDIA=0 و CMDDIA=0 و EXPERT=5 كأول خطوة لقمع أي نوافذ حوارية وإجبار المحرك على اتخاذ الخيارات الافتراضية الصامتة.",
+      "code_snippet": "(setvar \"FILEDIA\" 0)\n(setvar \"CMDDIA\" 0)\n(setvar \"EXPERT\" 5)",
+      "updated_at": "2026-10-06T22:30:00"
+    },
+    "side_database_fast_qto": {
+      "problem": "فتح المخططات الضخمة (40MB+) داخل محرر الرسم الكامل يستهلك موارد هائلة لتهيئة الرسوميات والـ Viewports مما يبطئ عمليات الحصر البرمجي.",
+      "solution": "استخدام قراءة قاعدة البيانات الجانبية (Side-Database Processing) عبر ReadDwgFile مباشرة في الذاكرة دون استدعاء محرك الرسم أو واجهة المستخدم (AcMgd)، مما يرفع سرعة الحصر والاستخراج بمعدل 10-30 ضعفاً.",
+      "code_snippet": "using (Database db = new Database(false, true)) { db.ReadDwgFile(path, FileOpenMode.OpenForReadAndAllShare, false, \"\"); }",
+      "updated_at": "2026-10-06T22:30:00"
+    },
+    "entity_handle_persistence": {
+      "problem": "تحديد وتتبع الكيانات الكهربائية (الكشافات، البرايز، اللوحات) بالإحداثيات فقط (X, Y) يسبب أخطاء فادحة عند تكرار الأدوار أو تحريك العناصر بكسور السنتيمتر.",
+      "solution": "الاعتماد الحصري على مقبض الكيان الدائم (Entity Handle) كمعرف فريد لا يتغير برمجياً لربط العنصر في الكاد بجدول الكميات أو جدول لوحة التوزيع (Panel Schedule).",
+      "code_snippet": "(setq ent_handle (cdr (assoc 5 (entget ent))))",
+      "updated_at": "2026-10-06T22:30:00"
+    },
+    "version_priority_discovery": {
+      "problem": "وجود إصدارات أوتوكاد متعددة (مثل AutoCAD 2013 بجانب AutoCAD 2027) قد يؤدي لاختيار الإصدار الأقدم تلقائياً إذا لم تكن القائمة مرتبة تنازلياً، مما يسبب تعليق البرنامج (Timeout) عند محاولة فتح ملفات DWG الحديثة.",
+      "solution": "ترتيب مسارات الفحص تنازلياً من أحدث إصدار (AutoCAD 2027 فأقل)، والتحقق من وجود accoreconsole في الإصدار الأحدث أولاً لتفادي مشاكل عدم توافق صيغ DWG الحديثة.",
+      "code_snippet": "DEFAULT_PATHS = [Path(r'C:\\Program Files\\Autodesk\\AutoCAD 2027\\accoreconsole.exe'), ...]",
+      "updated_at": "2026-10-06T22:33:00"
     }
   }
 }
