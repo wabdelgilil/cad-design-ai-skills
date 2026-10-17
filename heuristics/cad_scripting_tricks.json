@@ -151,6 +151,12 @@
       "solution": "تصدير معادلات إكسيل مرنة في خلايا المقارنة؛ بحيث تحسب الدالة =MIN() أفضل سعر تلقائياً وتستخرج فرق التكلفة ونسبة الوفر بصيغ ديناميكية وتنسيق شرطي جذاب.",
       "code_snippet": "ws.cell(row=r, column=7).value = f\"=IF(AND(E{r}>0,F{r}>0),MIN(E{r},F{r}),IF(E{r}>0,E{r},IF(F{r}>0,F{r},D{r})))\"\nws.cell(row=r, column=8).value = f\"=D{r}-G{r}\"\nws.cell(row=r, column=9).value = f\"=IF(D{r}>0, H{r}/D{r}, 0)\"",
       "updated_at": "2026-10-15T16:30:00"
+    },
+    "openpyxl_nested_formula_syntax_guard": {
+      "problem": "عند تركيب معادلات مركبة ديناميكياً من متغيرات فرعية (Sub-expressions)، إذا كانت المتغيرات تبدأ بعلامة (=)، يؤدي دمجها أو تغليفها بأقواس إلى توليد صيغ غير صالحة مثل '==' أو '(=G6+...)' مما يجعل برنامج Excel يكتشف خطأ في XML ويعرض رسالة استرداد 'Removed Records: Formula from sheetX.xml' ويحذف الصيغ.",
+      "solution": "بناء التعابير الحسابية الفرعية كنصوص مجردة (Pure Expressions) بدون علامة (=)، وإضافة علامة (=) واحدة فقط في أول السلسلة النهائية للصيغة.",
+      "code_snippet": "# Wrong: pts = f\"=G1+G2\"; f\"=({pts})*10\" -> produces =(=G1+G2)*10 (Corrupts Excel XML)\n# Correct: pts = f\"G1+G2\"; f\"=({pts})*10\" -> produces =(G1+G2)*10 (100% Valid Excel Formula)",
+      "updated_at": "2026-10-17T23:10:00"
     }
   }
 }

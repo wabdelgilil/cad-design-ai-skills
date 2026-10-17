@@ -85,3 +85,28 @@ Realistic turnkey execution pricing for high-end residential and commercial buil
 * **All Point Fixtures & Hardware:** Exact net design count $+ 10\%$ procurement buffer.
 * **All Conduits, Wires, and Cabling:** True 3D calculated length $+ 10\%$ waste/cutting allowance.
 * **Consumables (Glue, Tapes, Screws, Anchors):** Lump sum estimated at $2.5\% \text{ to } 3.5\%$ of direct installation materials.
+
+---
+
+## 5. Commercial Package Pricing & 3D Point BOM Calibration (Saudi Market Standard)
+
+### A. Commercial Package Conversion Formula (`= Package Price / Package Content`):
+In the Saudi electrical contracting market, vendors quote by **commercial package**, not by single meter:
+* **Building Wire Coils (`BS 6004 450/750V` - Riyadh Cables / Alfanar / Bahra):**
+  - Standard coil length is **`100 Yards = 91.44 meters`** (not 100m).
+  - The number **`105`** printed on Saudi wire coils denotes the **`105°C` heat-resistant PVC thermal insulation rating**, not length.
+  - Derived meter rate formula: `= Coil_Price / 91.44`.
+* **Cat6 UTP Pull Boxes:** `305 meters` (1000 ft) per box (`= Box_Price / 305`).
+* **uPVC Electrical Conduits (20mm / 25mm / 32mm / 50mm):** `3.0 meters` per standard pipe (`= Pipe_Price / 3`).
+* **Wall Backboxes (`Magic 7x7` & `BESA`):** `100 pieces` per carton (`= Carton_Price / 100`).
+
+### B. 3D Point BOM Allocation (Horizontal + Vertical Drops + Homerun Share + 10% Waste):
+| Point Item | Conduit Allocation (3m Pipe) | Conductor Allocation (91.44m Coil) |
+| :--- | :---: | :---: |
+| **Lighting Point (Downlight / Spot / Bulkhead)** | `3.2 - 3.5 m` (20mm PVC) | `12.0 m` ($2.5\text{ mm}^2$) |
+| **1G / 2G / 3G / 2-Way Switch** | `2.2 - 2.8 m` (20mm PVC) | `5.5 / 8.0 / 10.5 / 10.0 m` ($2.5\text{ mm}^2$) |
+| **13A Twin Socket Outlet** | `4.5 m` (25mm PVC) | `15.0 m` ($4.0\text{ mm}^2$) |
+| **20A DP Switch (Water Heater / Washer - Dedicated)** | `7.0 m` (25mm PVC) | `24.0 m` ($4.0\text{ mm}^2$) |
+| **32A IP65 AC Isolator (Dedicated Circuit to DB)** | `10.0 m` (25mm PVC) | `33.0 m` ($6.0\text{ mm}^2$) |
+| **RJ45 Cat6 / RG6 Coax Point (Dedicated to J-Box)** | `6.0 m` (25mm PVC) | `18.0 m` Cat6 / `15.0 m` RG6 |
+
