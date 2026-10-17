@@ -58,6 +58,36 @@
       "code_snippet": "acad = win32com.client.Dispatch('AutoCAD.Application.26')",
       "updated_at": "2026-09-27T00:36:00"
     },
+    "accoreconsole_stdin_hang_safeguard": {
+      "problem": "تشغيل accoreconsole بدون سكربت صريح أو بدون إغلاق قناة الإدخال stdin يجعل أوتوكاد ينتظر إدخال المستخدم التفاعلي في موجه الأوامر ويعلق السكربت للأبد.",
+      "solution": "تمرير سكربت ينتهي بـ QUIT Y صراحة، مع ضبط stdin=subprocess.DEVNULL وتحديد timeout قاطع في subprocess.run.",
+      "code_snippet": "subprocess.run([accore, '/i', dwg, '/s', scr, '/l', 'en-US'], stdin=subprocess.DEVNULL, timeout=45, capture_output=True)",
+      "updated_at": "2026-10-13T20:53:00"
+    },
+    "windows_8_3_short_paths_for_arabic": {
+      "problem": "تمرير مسارات مجلدات تحتوي على حروف عربية إلى موجه أوامر accoreconsole يسبب فشل القراءة وأخطاء ترميز ASCII/Unicode.",
+      "solution": "تحويل المسارات إلى صيغة المسار القصير 8.3 في ويندوز عبر win32api.GetShortPathName لضمان خلو المسار من أي حروف غير مدعومة.",
+      "code_snippet": "import win32api\nshort_path = win32api.GetShortPathName(str(full_path))",
+      "updated_at": "2026-10-13T20:53:00"
+    },
+    "excel_sheet_title_31_char_limit": {
+      "problem": "تسمية أوراق العمل في الإكسل (Worksheet Title) بأسماء أطول من 31 حرفاً يولد تحذير UserWarning في openpyxl وقد يفشل فتح الملف في بعض إصدارات إكسل القديمة.",
+      "solution": "قص اسم ورقة العمل برمجياً بحد أقصى 31 حرفاً لضمان التوافق التام 100%.",
+      "code_snippet": "safe_title = raw_title[:31]\nws = wb.create_sheet(title=safe_title)",
+      "updated_at": "2026-10-13T20:53:00"
+    },
+    "dwg_version_header_detection": {
+      "problem": "اختلاف إصدار حفظ ملفات الـ DWG داخل نفس المشروع (مثلاً ملفات محفوظة بصيغة AC1032 لأوتوكاد 2018 وملفات AC1015 لأوتوكاد 2000) يسبب فشل فتح بعض الملفات إذا استُخدم محرك كونسول قديم.",
+      "solution": "قراءة أول 6 بايتات من ترويسة الملف (Header Bytes) لتحديد إصدار الملف برمجياً قبل توجيهه للمحرك المتوافق.",
+      "code_snippet": "with open(dwg_path, 'rb') as f:\n    version = f.read(6) # e.g. b'AC1015' (2000) or b'AC1032' (2018)",
+      "updated_at": "2026-10-13T20:53:00"
+    },
+    "pymupdf_titleblock_contact_sheet": {
+      "problem": "ملفات PDF المصدرة من أوتوكاد تحتوي على خطوط هندسية (Vector paths/shx) لا يمكن قراءتها كـ OCR نصي مباشر للتعرف على أرقام اللوحات وعناوينها.",
+      "solution": "استخدام PyMuPDF (fitz) لقص منطقة خرطوشة اللوحة (Title Block) من الركن الأيمن السفلي لكل صفحة بدقة 100-150 DPI، وتجميعها في لوحة فحص بصرية موحدة (Contact Sheet Grid) لمراجعة عشرات المخططات بصرياً في ثوانٍ معدودة.",
+      "code_snippet": "clip = pymupdf.Rect(rect.width * 0.72, rect.height * 0.72, rect.width * 0.99, rect.height * 0.99)\npix = page.get_pixmap(clip=clip, dpi=100)\npix.save('tb_page.png')",
+      "updated_at": "2026-10-13T22:16:00"
+    },
     "headless_dialog_suppression": {
       "problem": "عند تشغيل accoreconsole أو السكربتات التلقائية، إذا واجه أوتوكاد ملفاً يحتاج استبدال خطوط shx أو تحذيراً حول إصدار الملف يظهر مربع حوار يوقف العملية تماماً في الخلفية (Silent Hang).",
       "solution": "إلزام السكربت أو ملف LISP بضبط متغيرات FILEDIA=0 و CMDDIA=0 و EXPERT=5 كأول خطوة لقمع أي نوافذ حوارية وإجبار المحرك على اتخاذ الخيارات الافتراضية الصامتة.",
@@ -93,6 +123,34 @@
       "solution": "تضمين آلية فحص الأخطاء الذاتي التلقائي (Self-Healing Loop) في بايثون؛ بحيث يراقب السكربت حجم مخرجات الاستخراج ويلتقط رسائل stderr/stdout ويطبق تصحيحات فورية (مثل استبدال الخطوط المفقودة أو تجاوز الكيانات التالفة) ويعيد المحاولة آلياً.",
       "code_snippet": "if not out_file.exists() or out_file.stat().st_size == 0:\n    apply_cad_recovery_flags(cmd)\n    proc = retry_execution()",
       "updated_at": "2026-10-06T23:22:00"
+    }
+  },
+  "autocad_live_com": {
+    "undo_transaction_grouping": {
+      "problem": "عند قيام الذكاء الاصطناعي برسم أو تعديل مئات الكيانات في جلسة أوتوكاد التفاعلية المفتوحة عبر COM، يسجل أوتوكاد كل عنصر كعملية منفصلة في سجل التراجع، مما يضطر المهندس للضغط على Ctrl+Z مئات المرات للتراجع.",
+      "solution": "تغليف عمليات الرسم والتعديل بين doc.StartUndoMark() و doc.EndUndoMark() لتجميع كافة تعديلات الوكيل في خطوة ذرية واحدة يمكن التراجع عنها بضغطة Ctrl+Z واحدة.",
+      "code_snippet": "doc.StartUndoMark()\ntry:\n    # batch drawing operations\nfinally:\n    doc.EndUndoMark()",
+      "updated_at": "2026-10-15T14:48:00"
+    },
+    "cmdactive_state_guard": {
+      "problem": "محاولة استدعاء دوال COM أثناء قيام المستخدم بأمر تفاعلي نشط في واجهة الأوتوكاد (مثل رسم خط أو أمر مفتوح) تسبب انهيار الاتصال بخطأ RPC_E_CALL_REJECTED.",
+      "solution": "فحص متغير CMDACTIVE في الأوتوكاد عبر doc.GetVariable('CMDACTIVE') قبل إرسال أي أمر؛ وإذا كانت قيمته غير صفرية يتم تنبيه المستخدم بإنهاء الأمر الحالي أو الضغط على Esc.",
+      "code_snippet": "if int(doc.GetVariable('CMDACTIVE')) != 0:\n    raise RuntimeError('Finish current AutoCAD command or press Esc.')",
+      "updated_at": "2026-10-15T14:48:00"
+    }
+  },
+  "excel_and_openpyxl": {
+    "dynamic_item_row_mapping": {
+      "problem": "عند كتابة سكربتات توليد الإكسيل التي تحتوي على ملخصات مشتريات (BOM) أو إشارات متبادلة بين شيتات متعددة، يؤدي تثبيت أرقام الصفوف يدويًا (Hardcoded Row Numbers) مثل G12 أو K45 إلى كسر المعادلات فور إضافة أي بند جديد أو تعديل عناوين الأقسام.",
+      "solution": "بناء قاموس تتبع ديناميكي أثناء كتابة الصفوف (item_row_map[item_id] = current_row)، واستخدامه لتركيب نصوص الصيغ الحسابية ديناميكياً بدقة 100% دون أي خطأ إزاحة.",
+      "code_snippet": "item_row_map = {}\nfor item in items:\n    current_row += 1\n    item_row_map[item['id']] = current_row\n# In summary box:\nws.cell(row=summary_row, column=3).value = f\"=G{item_row_map[wire_item_id]}\"",
+      "updated_at": "2026-10-15T16:30:00"
+    },
+    "rfq_supplier_comparison_formulas": {
+      "problem": "حساب ومقارنة أسعار الموردين داخل كود بايثون وحفظ النتائج كأرقام جامدة يسلب شيت التسعير مرونته التفاعلية، ويجبر المهندس على إعادة تشغيل السكربت كلما عدل المورد أسعاره.",
+      "solution": "تصدير معادلات إكسيل مرنة في خلايا المقارنة؛ بحيث تحسب الدالة =MIN() أفضل سعر تلقائياً وتستخرج فرق التكلفة ونسبة الوفر بصيغ ديناميكية وتنسيق شرطي جذاب.",
+      "code_snippet": "ws.cell(row=r, column=7).value = f\"=IF(AND(E{r}>0,F{r}>0),MIN(E{r},F{r}),IF(E{r}>0,E{r},IF(F{r}>0,F{r},D{r})))\"\nws.cell(row=r, column=8).value = f\"=D{r}-G{r}\"\nws.cell(row=r, column=9).value = f\"=IF(D{r}>0, H{r}/D{r}, 0)\"",
+      "updated_at": "2026-10-15T16:30:00"
     }
   }
 }
