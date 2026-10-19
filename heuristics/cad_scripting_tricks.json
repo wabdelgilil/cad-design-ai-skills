@@ -11,6 +11,12 @@
       "solution": "إعادة ضبط ترميز المخرجات في أول السكربت عبر sys.stdout.reconfigure(encoding='utf-8') لضمان طباعة النصوص العربية والإنجليزية بسلاسة تامة.",
       "code_snippet": "import sys\nsys.stdout.reconfigure(encoding='utf-8')",
       "updated_at": "2026-09-23T20:03:00"
+    },
+    "linetype_setup_and_definition_guard": {
+      "problem": "عند إنشاء مستند DXF جديد عبر ezdxf.new('R2010') وتعيين نوع خط لطبقة معينة (مثل CENTER أو DASHED) غير مسجل في جدول LTYPE، يفشل الأوتوكاد فوراً في فتح الملف ويرفضه برسالة خطأ قاتلة: Error: Undefined line type CENTER in LayerTableRecord - Invalid or incomplete DXF input -- drawing discarded.",
+      "solution": "إلزامية تفعيل المعامل setup=True عند إنشاء المستند (doc = ezdxf.new('R2010', setup=True)) لتحميل كافة أنواع الخطوط القياسية (CENTER, DASHED, DOT, DASHDOT, PHANTOM)، والتحقق برمجياً من وجود أي نوع خط مستخدم في doc.linetypes أو إضافته صراحة عبر doc.linetypes.add() قبل ربطه بأي طبقة.",
+      "code_snippet": "doc = ezdxf.new('R2010', setup=True)\nrequired_linetypes = {'CENTER': ([1.25, 1.25, -0.25, 0.25, -0.25], 'Center ____ _ ____')}\nfor lt_name, (lt_pat, lt_desc) in required_linetypes.items():\n    if lt_name not in doc.linetypes:\n        doc.linetypes.add(lt_name, pattern=lt_pat, description=lt_desc)\n# Guard in layer creation:\nlay_ltype = ltype if ltype in doc.linetypes else 'Continuous'",
+      "updated_at": "2026-10-19T15:08:00"
     }
   },
   "geometry": {
@@ -69,6 +75,12 @@
       "solution": "تحويل المسارات إلى صيغة المسار القصير 8.3 في ويندوز عبر win32api.GetShortPathName لضمان خلو المسار من أي حروف غير مدعومة.",
       "code_snippet": "import win32api\nshort_path = win32api.GetShortPathName(str(full_path))",
       "updated_at": "2026-10-13T20:53:00"
+    },
+    "ascii_temp_workspace_for_accoreconsole": {
+      "problem": "إذا كانت خاصية 8.3 Short Names معطلة على قرص العمل (مثل D: drive)، تفشل دوال win32api.GetShortPathName وتظل الحروف العربية موجودة، مما يسبب فشل accoreconsole عند تشغيل أوامر DXFIN أو OPEN داخل ملفات .scr النصية.",
+      "solution": "نسخ ملف الـ DXF إلى مجلد مؤقت آمن ونظيف في قرص النظام (C:\\Users\\...\\AppData\\Local\\Temp) عبر tempfile.mkdtemp()، وتشغيل التحويل وحفظ الـ DWG هناك باسم إنجليزي صرف، ثم نسخ ملف الـ DWG الناتج بعد اكتمال التحويل بنجاح، مما يمنح استقراراً وحصانة بنسبة 100% ضد أي مشاكل ترميز.",
+      "code_snippet": "temp_dir = Path(tempfile.mkdtemp(prefix='cad_conv_'))\ntemp_dxf = temp_dir / 'layout.dxf'\ntemp_dwg = temp_dir / 'layout.dwg'\nshutil.copy2(src_dxf, temp_dxf)\n# Run accoreconsole in temp_dir, then copy temp_dwg to final destination",
+      "updated_at": "2026-10-19T21:40:00"
     },
     "excel_sheet_title_31_char_limit": {
       "problem": "تسمية أوراق العمل في الإكسل (Worksheet Title) بأسماء أطول من 31 حرفاً يولد تحذير UserWarning في openpyxl وقد يفشل فتح الملف في بعض إصدارات إكسل القديمة.",
@@ -157,6 +169,20 @@
       "solution": "بناء التعابير الحسابية الفرعية كنصوص مجردة (Pure Expressions) بدون علامة (=)، وإضافة علامة (=) واحدة فقط في أول السلسلة النهائية للصيغة.",
       "code_snippet": "# Wrong: pts = f\"=G1+G2\"; f\"=({pts})*10\" -> produces =(=G1+G2)*10 (Corrupts Excel XML)\n# Correct: pts = f\"G1+G2\"; f\"=({pts})*10\" -> produces =(G1+G2)*10 (100% Valid Excel Formula)",
       "updated_at": "2026-10-17T23:10:00"
+    }
+  },
+  "cad_shop_drawings": {
+    "true_ladder_tray_geometry_generation": {
+      "problem": "رسم الكابل تراي في الأوتوكاد كخط مفرد أو مستطيل محشو بهاتش مائل ANSI31 يعطي مظهراً بدائياً مشوشاً يخالف المعايير الهندسية للمخططات التنفيذية (MEP Shop Drawings) ويصعّب تمييز الكابلات الممددة فوقه.",
+      "solution": "توليد هندسة السلم الحقيقية (True Ladder Geometry): رسم قضيبين جانبيين متوازيين (Dual Side Rails)، وتقسيم المسار إلى درجات سلم مستعرضة (Transverse Rungs) كل 300 مم بالضبط، وإضافة وصلات ربط خضراء بارزة (Coupler Plates) كل 3.0 أمتار (طول الوصلة القياسية)، ورسم الأكواع (Elbows/Bends) بأقواس متحدة المركز (Concentric Arcs) وفق نصف قطر الانحناء المعتمد.",
+      "code_snippet": "for d in range(0, length, 300):\n    pt_r1 = p1 + dir_vec * d + norm_vec * (w/2)\n    pt_r2 = p1 + dir_vec * d - norm_vec * (w/2)\n    msp.add_line(pt_r1, pt_r2, dxfattribs={'layer': 'E-TRAY-RUNG', 'color': 8})\nfor c in range(0, length, 3000):\n    # add coupler plate markers at standard 3m modular joints",
+      "updated_at": "2026-10-19T23:15:00"
+    },
+    "multi_conductor_parallel_bundle_routing": {
+      "problem": "رسم كابلات الصواعد الرئيسية المتوازية (مثل صواعد 400A و 500A المكونة من عدة كابلات مسلحة 150 و 185 مم²) كخط واحد سميك فوق بعضها يمنع مهندس الموقع والجهة المعتمدة من حصر وتتبع عدد الكابلات ومساراتها المنفصلة.",
+      "solution": "توليد مصفوفة خطوط متوازية بإزاحة متعامدة ثابتة (Orthogonal Offset of 0.15m - 0.25m): حساب متجه العمودي على المسار وإزاحة كل كابل بمسافة محددة، مع تخصيص ألوان مميزة لكل مغذي ولوحة (مثل الأحمر لـ MDP1، الأزرق لـ MDP2، إلخ) وتثبيت أسهم اتجاه التيار ووسوم التوصيف (Leader Callouts) عند نقاط الدوران والتفرع.",
+      "code_snippet": "for i, feeder in enumerate(zone_feeders):\n    offset = (i - (n - 1) / 2.0) * spacing\n    offset_pts = [(p[0] + norm[0] * offset, p[1] + norm[1] * offset) for p in centerline_pts]\n    msp.add_lwpolyline(offset_pts, dxfattribs={'layer': 'E-CABLE-SUBFEEDER', 'color': feeder['color']})",
+      "updated_at": "2026-10-19T23:15:00"
     }
   }
 }
